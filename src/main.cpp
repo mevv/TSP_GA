@@ -15,7 +15,6 @@ enum class TYPE { NONE = -1, TSP, ATSP };
 enum class EDGE_WEIGHT_TYPE { NONE = -1, EXPLICIT, EUC_2D, ATT };
 enum class EDGE_WEIGHT_FORMAT { NONE = -1, FULL_MATRIX };
 enum class SECTION { NONE = -1, EDGE_WEIGHT_SECTION, NODE_COORD_SECTION };
-enum class ALGO { LS, GLS };
 
 TYPE str2type(const std::string& str)
 {
