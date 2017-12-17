@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <chrono>
+#include <algorithm>
 
 const double INF = 999999;
 
@@ -220,6 +221,46 @@ public:
         }
     }
 
+    // 1 - [0;k], 2 - [k+1 ; size-1]
+    // Partially Mapped Crossover
+    std::vector<double> PMX(const std::vector<double>& p1, const std::vector<double>& p2, size_t k)
+    {
+        std::vector<double> res;
+        std::vector<double> swath;
+
+        for (size_t i = 0; i < p1.size(); i++)
+            if (i <= k)
+                res.push_back(p1[i]);
+            else
+                res.push_back(-1);
+
+        for (size_t i = 0; i < p1.size(); i++)
+            if (i <= k)
+                swath.push_back(p1[i]);
+            else
+                swath.push_back(-1);
+
+        for (size_t i = 0; i <= k; i++)
+        {
+            if (std::find(res.begin(), res.end(), p2[i]) == res.end())
+            {
+                size_t pos = i;
+                double val = p2[i];
+
+                while (pos <= k)
+                    pos = std::distance(p2.begin(), std::find(p2.begin(), p2.end(), p1[pos]));
+
+                res[pos] = val;
+            }
+        }
+
+        for (size_t i = 0; i < res.size(); i++)
+            if (res[i] == -1)
+                res[i] = p2[i];
+
+        return res;
+    }
+
 private:
     std::string m_name;
     std::string m_comment;
@@ -346,6 +387,8 @@ private:
 
         return result;
     }
+
+
 };
 
 
@@ -381,5 +424,7 @@ int main(int argc, char** argv)
 //    std::cout << "Initial: ";
 //    a.showInitial();
 
+    auto res = a.PMX({10, 9, 6, 5, 3, 7, 8, 1, 4, 2}, {10, 5, 3, 7, 4, 1 ,8, 2, 6 ,9}, 2);
+    for (auto i : res) std::cout << i << " "; std::cout << std::endl;
     return 0;
 }
