@@ -8,6 +8,7 @@
 #include <random>
 
 const double INF = 999999;
+const double MUTATION_PROBABILITY = 0.1;
 
 enum class TYPE { NONE = -1, TSP, ATSP };
 enum class EDGE_WEIGHT_TYPE { NONE = -1, EXPLICIT, EUC_2D, ATT };
@@ -290,6 +291,38 @@ public:
         }
 
         return result;
+    }
+
+    std::vector<double> mutation(const std::vector<double>& individual)
+    {
+        std::vector<double> result(individual);
+
+        double die = 1.0 / rand(0, 100);
+        if (die < MUTATION_PROBABILITY)
+        {
+            int a = rand(0, individual.size() - 1);
+            int b = rand(0, individual.size() - 1);
+
+            while (a == b)
+                b = rand(0, individual.size() - 1);
+
+            std::swap(result[a], result[b]);
+        }
+
+        return result;
+    }
+
+    void crossover(const std::vector<std::vector<double>>& population)
+    {
+        std::vector<std::vector<double>> result;
+
+        int k = rand(1, population[0].size() - 2);
+
+        for (size_t i = 0; i < population.size() - 1; i++)
+        {
+            m_population.push_back(mutation(PMX(population[i], population[i+1], k)));
+            m_population.push_back(mutation(PMX(population[i+1], population[i], k)));
+        }
     }
 
 private:
