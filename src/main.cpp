@@ -113,7 +113,7 @@ public:
 
     void showMatrix() { for (auto i : m_matrix) { std::cout << std::endl; for (auto j : i) std::cout << j << " "; } std::cout << std::endl; }
 
-    void showInitial() { for (auto i : m_initial) { std::cout << std::endl; for (auto j : i) std::cout << j << " "; } std::cout << std::endl; }
+    void showInitial() { for (auto i : m_population) { std::cout << std::endl; for (auto j : i) std::cout << j << " "; } std::cout << std::endl; }
 
     bool readFromFile(const std::string& filename)
     {
@@ -166,7 +166,7 @@ public:
 
         while(ifs.good())
         {
-            m_initial.push_back(std::vector<double>());
+            m_population.push_back(std::vector<double>());
             for (size_t i = 0; i < m_size; i++)
             {
                 double tmp;
@@ -174,14 +174,14 @@ public:
 
                 if (!ifs.good())
                 {
-                    m_initial.pop_back();
-                    if (m_initial.empty())
+                    m_population.pop_back();
+                    if (m_population.empty())
                         return false;
                     else
                         return true;
                 }
 
-                m_initial.back().push_back(tmp);
+                m_population.back().push_back(tmp);
             }
         }
 
@@ -274,7 +274,7 @@ private:
     double m_record;
 
     std::vector<std::vector<double> > m_matrix;
-    std::vector<std::vector<double> > m_initial;
+    std::vector<std::vector<double> > m_population;
     std::vector<double> m_path;
 
     size_t m_iterations;
@@ -388,6 +388,12 @@ private:
         return result;
     }
 
+    double getFitness(const std::vector<double>& path)
+    {
+        double sum = 0.0;
+        for (auto i : m_population) sum += getLenght(i);
+        return 1.0 - getLenght(path) / sum;
+    }
 
 };
 
