@@ -5,6 +5,7 @@
 #include <cmath>
 #include <chrono>
 #include <algorithm>
+#include <random>
 
 const double INF = 999999;
 
@@ -95,6 +96,15 @@ std::string rtrim(const std::string& str)
 std::string trim(const std::string& str)
 {
   return ltrim(rtrim(str));
+}
+
+int rand(int a, int b)
+{
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<int> dist(a, b);
+
+    return dist(mt);
 }
 
 }
@@ -261,6 +271,27 @@ public:
         return res;
     }
 
+    std::vector<std::vector<double>> selectionForCrossover()
+    {
+        std::vector<std::vector<double>> result;
+
+        for (size_t i = 0; i < m_population.size() / 2; i++)
+        {
+            int a = rand(0, m_population.size()-1);
+            int b = rand(0, m_population.size()-1);
+
+            while (a == b)
+                b = rand(0, m_population.size()-1);
+
+            if (getFitness(m_population[a]) > getFitness(m_population[b]))
+                result.push_back(m_population[a]);
+            else
+                result.push_back(m_population[b]);
+        }
+
+        return result;
+    }
+
 private:
     std::string m_name;
     std::string m_comment;
@@ -395,6 +426,7 @@ private:
         return 1.0 - getLenght(path) / sum;
     }
 
+
 };
 
 
@@ -430,7 +462,12 @@ int main(int argc, char** argv)
 //    std::cout << "Initial: ";
 //    a.showInitial();
 
-    auto res = a.PMX({10, 9, 6, 5, 3, 7, 8, 1, 4, 2}, {10, 5, 3, 7, 4, 1 ,8, 2, 6 ,9}, 2);
-    for (auto i : res) std::cout << i << " "; std::cout << std::endl;
+//    auto res = a.PMX({10, 9, 6, 5, 3, 7, 8, 1, 4, 2}, {10, 5, 3, 7, 4, 1 ,8, 2, 6 ,9}, 2);
+//    for (auto i : res) std::cout << i << " "; std::cout << std::endl;
+
+    auto p = a.selectionForCrossover();
+    for (auto i : p) { std::cout << std::endl; for (auto j : i) std::cout << j << " "; } std::cout << std::endl;
+
+
     return 0;
 }
