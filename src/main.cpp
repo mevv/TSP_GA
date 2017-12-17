@@ -9,6 +9,7 @@
 
 const double INF = 999999;
 const double MUTATION_PROBABILITY = 0.1;
+const size_t ITERATIONS = 100;
 
 enum class TYPE { NONE = -1, TSP, ATSP };
 enum class EDGE_WEIGHT_TYPE { NONE = -1, EXPLICIT, EUC_2D, ATT };
@@ -200,128 +201,25 @@ public:
     }
 
 
-
     void solve(bool verbose = true)
     {
         std::chrono::time_point<std::chrono::system_clock> start, end;
         int time = 0;
 
-        if (verbose)
-        {
-            std::cout << "Initial lenght: " << getLenght(m_path) << std::endl;
-            std::cout << "Initial: ";
-            for (auto i : m_path) std::cout << i << " ";
-            std::cout << std::endl;
-        }
-
         start = std::chrono::system_clock::now();
 
-        //...
+        GA();
 
         end = std::chrono::system_clock::now();
         time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
         if (verbose)
         {
-            std::cout << "Iterations: " << m_iterations << std::endl;
             std::cout << "Elapsed time: " << time << " ms" << std::endl;
             std::cout << "Record lenght: " << m_record << std::endl;
             std::cout << "Path: ";
             for (auto i : m_path) std::cout << i << " ";
             std::cout << std::endl << std::endl;
-        }
-    }
-
-    // 1 - [0;k], 2 - [k+1 ; size-1]
-    // Partially Mapped Crossover
-    std::vector<double> PMX(const std::vector<double>& p1, const std::vector<double>& p2, size_t k)
-    {
-        std::vector<double> res;
-        std::vector<double> swath;
-
-        for (size_t i = 0; i < p1.size(); i++)
-            if (i <= k)
-                res.push_back(p1[i]);
-            else
-                res.push_back(-1);
-
-        for (size_t i = 0; i < p1.size(); i++)
-            if (i <= k)
-                swath.push_back(p1[i]);
-            else
-                swath.push_back(-1);
-
-        for (size_t i = 0; i <= k; i++)
-        {
-            if (std::find(res.begin(), res.end(), p2[i]) == res.end())
-            {
-                size_t pos = i;
-                double val = p2[i];
-
-                while (pos <= k)
-                    pos = std::distance(p2.begin(), std::find(p2.begin(), p2.end(), p1[pos]));
-
-                res[pos] = val;
-            }
-        }
-
-        for (size_t i = 0; i < res.size(); i++)
-            if (res[i] == -1)
-                res[i] = p2[i];
-
-        return res;
-    }
-
-    std::vector<std::vector<double>> selectionForCrossover()
-    {
-        std::vector<std::vector<double>> result;
-
-        for (size_t i = 0; i < m_population.size() / 2; i++)
-        {
-            int a = rand(0, m_population.size()-1);
-            int b = rand(0, m_population.size()-1);
-
-            while (a == b)
-                b = rand(0, m_population.size()-1);
-
-            if (getFitness(m_population[a]) > getFitness(m_population[b]))
-                result.push_back(m_population[a]);
-            else
-                result.push_back(m_population[b]);
-        }
-
-        return result;
-    }
-
-    std::vector<double> mutation(const std::vector<double>& individual)
-    {
-        std::vector<double> result(individual);
-
-        double die = 1.0 / rand(0, 100);
-        if (die < MUTATION_PROBABILITY)
-        {
-            int a = rand(0, individual.size() - 1);
-            int b = rand(0, individual.size() - 1);
-
-            while (a == b)
-                b = rand(0, individual.size() - 1);
-
-            std::swap(result[a], result[b]);
-        }
-
-        return result;
-    }
-
-    void crossover(const std::vector<std::vector<double>>& population)
-    {
-        std::vector<std::vector<double>> result;
-
-        int k = rand(1, population[0].size() - 2);
-
-        for (size_t i = 0; i < population.size() - 1; i++)
-        {
-            m_population.push_back(mutation(PMX(population[i], population[i+1], k)));
-            m_population.push_back(mutation(PMX(population[i+1], population[i], k)));
         }
     }
 
@@ -459,15 +357,125 @@ private:
         return 1.0 - getLenght(path) / sum;
     }
 
+    void GA()
+    {
+        for (size_t i = 0; i < ITERATIONS; i++)
+        {
+            crossover(selectionForCrossover());
 
+            auto tmp(m_population);
+
+            std::sort(tmp.begin(), tmp.end(), [this](const std::vector<double>& a, const std::vector<double>& b)
+                                              { return getFitness(a) > getFitness(b); });
+
+            m_population = tmp;
+
+            m_path = m_population[0];
+            m_record = getLenght(m_path);
+
+            while (m_population.size() > m_size)
+                m_population.pop_back();
+        }
+    }
+
+    // 1 - [0;k], 2 - [k+1 ; size-1]
+    // Partially Mapped Crossover
+    std::vector<double> PMX(const std::vector<double>& p1, const std::vector<double>& p2, size_t k)
+    {
+        std::vector<double> res;
+        std::vector<double> swath;
+
+        for (size_t i = 0; i < p1.size(); i++)
+            if (i <= k)
+                res.push_back(p1[i]);
+            else
+                res.push_back(-1);
+
+        for (size_t i = 0; i < p1.size(); i++)
+            if (i <= k)
+                swath.push_back(p1[i]);
+            else
+                swath.push_back(-1);
+
+        for (size_t i = 0; i <= k; i++)
+        {
+            if (std::find(res.begin(), res.end(), p2[i]) == res.end())
+            {
+                size_t pos = i;
+                double val = p2[i];
+
+                while (pos <= k)
+                    pos = std::distance(p2.begin(), std::find(p2.begin(), p2.end(), p1[pos]));
+
+                res[pos] = val;
+            }
+        }
+
+        for (size_t i = 0; i < res.size(); i++)
+            if (res[i] == -1)
+                res[i] = p2[i];
+
+        return res;
+    }
+
+    std::vector<std::vector<double>> selectionForCrossover()
+    {
+        std::vector<std::vector<double>> result;
+
+        for (size_t i = 0; i < m_population.size() / 2; i++)
+        {
+            int a = rand(0, m_population.size()-1);
+            int b = rand(0, m_population.size()-1);
+
+            while (a == b)
+                b = rand(0, m_population.size()-1);
+
+            if (getFitness(m_population[a]) > getFitness(m_population[b]))
+                result.push_back(m_population[a]);
+            else
+                result.push_back(m_population[b]);
+        }
+
+        return result;
+    }
+
+    std::vector<double> mutation(const std::vector<double>& individual)
+    {
+        std::vector<double> result(individual);
+
+        double die = 1.0 / rand(0, 100);
+        if (die < MUTATION_PROBABILITY)
+        {
+            int a = rand(0, individual.size() - 1);
+            int b = rand(0, individual.size() - 1);
+
+            while (a == b)
+                b = rand(0, individual.size() - 1);
+
+            std::swap(result[a], result[b]);
+        }
+
+        return result;
+    }
+
+    void crossover(const std::vector<std::vector<double>>& population)
+    {
+        std::vector<std::vector<double>> result;
+
+        int k = rand(1, population[0].size() - 2);
+
+        for (size_t i = 0; i < population.size() - 1; i++)
+        {
+            m_population.push_back(mutation(PMX(population[i], population[i+1], k)));
+            m_population.push_back(mutation(PMX(population[i+1], population[i], k)));
+        }
+    }
 };
 
 
 int main(int argc, char** argv)
 {
     Tsp a;
-
-//    std::cout << argv[1] << " " << argv[2] << std::endl;
 
     if (argc != 3)
     {
@@ -490,17 +498,8 @@ int main(int argc, char** argv)
     std::cout << "Name: " << a.getName() << std::endl;
     std::cout << "Description: " << a.getDescription() << std::endl;
     std::cout << "Size: " << a.getSize() << std::endl;
-//    std::cout << "Matrix: ";
-//    a.showMatrix();
-//    std::cout << "Initial: ";
-//    a.showInitial();
 
-//    auto res = a.PMX({10, 9, 6, 5, 3, 7, 8, 1, 4, 2}, {10, 5, 3, 7, 4, 1 ,8, 2, 6 ,9}, 2);
-//    for (auto i : res) std::cout << i << " "; std::cout << std::endl;
-
-    auto p = a.selectionForCrossover();
-    for (auto i : p) { std::cout << std::endl; for (auto j : i) std::cout << j << " "; } std::cout << std::endl;
-
+    a.solve();
 
     return 0;
 }
