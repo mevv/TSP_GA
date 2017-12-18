@@ -10,11 +10,15 @@
 const double INF = 999999;
 const double MUTATION_PROBABILITY = 0.1;
 const size_t ITERATIONS = 100;
+const size_t SELECTION_PART = 2; // how many times selection group less than original population
+const size_t ELITE = 1; // number of individuals selecting for crossover without dice rolling
 
 enum class TYPE { NONE = -1, TSP, ATSP };
 enum class EDGE_WEIGHT_TYPE { NONE = -1, EXPLICIT, EUC_2D, ATT };
 enum class EDGE_WEIGHT_FORMAT { NONE = -1, FULL_MATRIX };
 enum class SECTION { NONE = -1, EDGE_WEIGHT_SECTION, NODE_COORD_SECTION };
+
+enum class CROSSOVER_SELECTION { PROPORTIONAL, TOURNAMENT };
 
 TYPE str2type(const std::string& str)
 {
@@ -200,14 +204,21 @@ public:
     }
 
 
-    void solve(bool verbose = true)
+    void solve(CROSSOVER_SELECTION cross = CROSSOVER_SELECTION::PROPORTIONAL,bool verbose = true)
     {
         std::chrono::time_point<std::chrono::system_clock> start, end;
         int time = 0;
 
         start = std::chrono::system_clock::now();
 
-        GA();
+        sortAndBest();
+
+        if (verbose)
+        {
+            std::cout << "Best initial: " << m_record << std::endl;
+        }
+
+        GA(cross);
 
         end = std::chrono::system_clock::now();
         time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -356,21 +367,23 @@ private:
         return 1.0 - getLenght(path) / sum;
     }
 
-    void GA()
+    void sortAndBest()
+    {
+        auto tmp(m_population);
+        std::sort(tmp.begin(), tmp.end(), [this](const std::vector<double>& a, const std::vector<double>& b)
+                                          { return getFitness(a) > getFitness(b); });
+        m_population = tmp;
+        m_path = m_population[0];
+        m_record = getLenght(m_path);
+    }
+
+    void GA(CROSSOVER_SELECTION cross = CROSSOVER_SELECTION::PROPORTIONAL)
     {
         for (size_t i = 0; i < ITERATIONS; i++)
         {
-            crossover(selectionForCrossover());
+            crossover(selectionForCrossover(cross));
 
-            auto tmp(m_population);
-
-            std::sort(tmp.begin(), tmp.end(), [this](const std::vector<double>& a, const std::vector<double>& b)
-                                              { return getFitness(a) > getFitness(b); });
-
-            m_population = tmp;
-
-            m_path = m_population[0];
-            m_record = getLenght(m_path);
+            sortAndBest();
 
             while (m_population.size() > m_size)
                 m_population.pop_back();
@@ -417,11 +430,19 @@ private:
         return res;
     }
 
-    std::vector<std::vector<double>> selectionForCrossover()
+    std::vector<std::vector<double>> selectionForCrossover(CROSSOVER_SELECTION cross)
+    {
+        if (cross == CROSSOVER_SELECTION::TOURNAMENT)
+            return tournament();
+        else
+            return proportional();
+    }
+
+    std::vector<std::vector<double>> tournament()
     {
         std::vector<std::vector<double>> result;
 
-        for (size_t i = 0; i < m_population.size() / 2; i++)
+        for (size_t i = 0; i < m_population.size() / SELECTION_PART; i++)
         {
             int a = rand(0, m_population.size()-1);
             int b = rand(0, m_population.size()-1);
@@ -438,11 +459,39 @@ private:
         return result;
     }
 
+    std::vector<std::vector<double>> proportional()
+    {
+        std::vector<std::vector<double>> result;
+
+        double minFitness = getFitness(m_population[m_population.size() - 1]);
+        double maxFitness = getFitness(m_population[0]);
+
+        for (size_t i = 0; i < m_population.size(); i++)
+        {
+            if (result.size() == m_population.size() / SELECTION_PART)
+                break;
+
+            if (i < ELITE)
+            {
+                result.push_back(m_population[i]);
+                continue;
+            }
+
+            double die = rand(1, 100) / 100.0;
+            double normalizedFitness = (getFitness(m_population[i]) - minFitness) / (maxFitness - minFitness);
+
+            if (normalizedFitness > die)
+                result.push_back(m_population[i]);
+        }
+
+        return result;
+    }
+
     std::vector<double> mutation(const std::vector<double>& individual)
     {
         std::vector<double> result(individual);
 
-        double die = 1.0 / rand(0, 100);
+        double die = rand(1, 100) / 100.0;
         if (die < MUTATION_PROBABILITY)
         {
             int a = rand(0, individual.size() - 1);
@@ -498,7 +547,7 @@ int main(int argc, char** argv)
     std::cout << "Description: " << a.getDescription() << std::endl;
     std::cout << "Size: " << a.getSize() << std::endl;
 
-    a.solve();
+    a.solve(CROSSOVER_SELECTION::TOURNAMENT);
 
     return 0;
 }
