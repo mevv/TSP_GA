@@ -8,10 +8,11 @@
 #include <random>
 
 const double INF = 999999;
-const double MUTATION_PROBABILITY = 0.1;
+const double MUTATION_PROBABILITY = 0.3;
 const size_t ITERATIONS = 100;
 const size_t SELECTION_PART = 2; // how many times selection group less than original population
 const size_t ELITE = 1; // number of individuals selecting for crossover without dice rolling
+const size_t MUTATION_SIZE = 2; // number of genes pairs susceptible for mutation
 
 enum class TYPE { NONE = -1, TSP, ATSP };
 enum class EDGE_WEIGHT_TYPE { NONE = -1, EXPLICIT, EUC_2D, ATT };
@@ -491,16 +492,19 @@ private:
     {
         std::vector<double> result(individual);
 
-        double die = rand(1, 100) / 100.0;
-        if (die < MUTATION_PROBABILITY)
+        for (size_t i = 0; i < MUTATION_SIZE; i++)
         {
-            int a = rand(0, individual.size() - 1);
-            int b = rand(0, individual.size() - 1);
+            double die = rand(1, 100) / 100.0;
+            if (die < MUTATION_PROBABILITY)
+            {
+                int a = rand(0, individual.size() - 1);
+                int b = rand(0, individual.size() - 1);
 
-            while (a == b)
-                b = rand(0, individual.size() - 1);
+                while (a == b)
+                    b = rand(0, individual.size() - 1);
 
-            std::swap(result[a], result[b]);
+                std::swap(result[a], result[b]);
+            }
         }
 
         return result;
