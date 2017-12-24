@@ -396,19 +396,12 @@ private:
     std::vector<double> PMX(const std::vector<double>& p1, const std::vector<double>& p2, size_t k)
     {
         std::vector<double> res;
-        std::vector<double> swath;
 
         for (size_t i = 0; i < p1.size(); i++)
             if (i <= k)
                 res.push_back(p1[i]);
             else
                 res.push_back(-1);
-
-        for (size_t i = 0; i < p1.size(); i++)
-            if (i <= k)
-                swath.push_back(p1[i]);
-            else
-                swath.push_back(-1);
 
         for (size_t i = 0; i <= k; i++)
         {
