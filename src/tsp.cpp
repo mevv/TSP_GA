@@ -186,10 +186,7 @@ bool TSP::isSection(const std::string& str)
 
 bool TSP::isEOF(const std::string& str)
 {
-    if (str == "EOF")
-        return true;
-
-    return false;
+    return str == "EOF";
 }
 
 bool TSP::parseSection(const std::string& str)
